@@ -23,6 +23,8 @@
 import Foundation
 import UIKit
 
+// MARK: - NextGrowingTextView: UIScrollView
+
 open class NextGrowingTextView: UIScrollView {
   
   // MARK: - Nested types
@@ -46,9 +48,11 @@ open class NextGrowingTextView: UIScrollView {
     }
     set {
       guard newValue > 1 else {
-        _minNumberOfLines = 1
+        _minHeight = simulateHeight(1)
         return
       }
+
+      _minHeight = simulateHeight(newValue)
       _minNumberOfLines = newValue
     }
   }
@@ -59,19 +63,16 @@ open class NextGrowingTextView: UIScrollView {
     }
     set {
       guard newValue > 1 else {
-        _maxNumberOfLines = 1
+        _maxHeight = simulateHeight(1)
         return
       }
+
+      _maxHeight = simulateHeight(newValue)
       _maxNumberOfLines = newValue
     }
   }
 
-  @available(*, deprecated, message: "Use isAutomaticScrollToBottomEnabled")
-  open var disableAutomaticScrollToBottom: Bool {
-    return !isAutomaticScrollToBottomEnabled
-  }
-
-  open var isAutomaticScrollToBottomEnabled = true
+  open var disableAutomaticScrollToBottom = false
   
   open var placeholderAttributedText: NSAttributedString? {
     get { return _textView.placeholderAttributedText }
@@ -104,19 +105,8 @@ open class NextGrowingTextView: UIScrollView {
   }
   
   private let _textView: NextGrowingInternalTextView
-
-  private var _maxNumberOfLines: Int = 3 {
-    didSet {
-      _maxHeight = simulateHeight(_maxNumberOfLines)
-    }
-  }
-
-  private var _minNumberOfLines: Int = 1 {
-    didSet {
-      _minHeight = simulateHeight(_minNumberOfLines)
-    }
-  }
-
+  private var _maxNumberOfLines: Int = 0
+  private var _minNumberOfLines: Int = 0
   private var _maxHeight: CGFloat = 0
   private var _minHeight: CGFloat = 0
   private var _previousFrame: CGRect = CGRect.zero
@@ -162,13 +152,12 @@ open class NextGrowingTextView: UIScrollView {
 
   private func setup() {
 
-    _textView.textContainerInset = .init(top: 4, left: 0, bottom: 4, right: 0)
     _textView.isScrollEnabled = false
     _textView.font = UIFont.systemFont(ofSize: 16)
     _textView.backgroundColor = UIColor.clear
     addSubview(_textView)
-
-    updateMinimumAndMaximumHeight()
+    _minHeight = simulateHeight(1)
+    maxNumberOfLines = 3
 
     _textView.didChange = { [weak self] in
       self?.fitToScrollView()
@@ -229,12 +218,12 @@ open class NextGrowingTextView: UIScrollView {
   }
 
   private func scrollToBottom() {
-    guard !isAutomaticScrollToBottomEnabled else { return }
+    guard !disableAutomaticScrollToBottom else { return }
     contentOffset.y = contentSize.height - frame.height
   }
 
   private func updateMinimumAndMaximumHeight() {
-    _minHeight = simulateHeight(minNumberOfLines)
+    _minHeight = simulateHeight(1)
     _maxHeight = simulateHeight(maxNumberOfLines)
     fitToScrollView()
   }
